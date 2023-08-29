@@ -1,4 +1,6 @@
-ment)
-#     inner_iframe = @wait.until{@driver.find_element(tag_name: 'iframe') } # Assuming the inner iframe is the first iframe
-#     @driver.switch_to.frame(inner_iframe)
-#     puts "switched to inner iframe"
+
+  def test_find_elements_returns_mock_elements
+    results = @wrapper.find_elements(:css, '#navbarNavAltMarkup > div:nth-child(1)')
+    assert_equal('Home', results[0].text)
+    assert_equal('About Us', results[2].text)
+  end
