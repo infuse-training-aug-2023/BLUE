@@ -19,29 +19,39 @@ class TestWrapper < Test::Unit::TestCase
     result = @wrapper.find_element(:css, '#root > nav > a')
     assert_equal('useMango DemoWebsite', result.text)
   end
-
   
-  def test_move_to
 
+
+  def test_move_to
+    
     products_element = @wrapper.find_element(:id, 'products')
 
     initial_color = products_element.css_value('color')
-
+  
+    expected_initial_color = 'rgba(255, 255, 255, 0.5)'
+  
     @wrapper.move_to(products_element)
-
+  
     hovered_color = products_element.css_value('color')
-
-    
-    expected_initial_color = 'rgba(255, 255, 255, 0.5)'  
-    
-    expected_hovered_color = 'rgba(255, 255, 255, 0.75)'
-
+  
+    expected_hovered_color = 'rgba(255, 255, 255, 0.75)'  
+  
     assert_equal(expected_initial_color, initial_color, "Initial color is not as expected")
     assert_not_equal(initial_color, hovered_color, "Color did not change after hovering")
     assert_equal(expected_hovered_color, hovered_color, "Color is not as expected after hovering")
+  
+    @wrapper.move_to(products_element, 10, 20)
+  
+    moved_color = products_element.css_value('color')
+  
+    expected_moved_color = 'rgba(255, 255, 255, 0.5)'  
+  
+    assert_equal(expected_moved_color, moved_color, "Color is not as expected after moving with x and y values")
+    assert_not_equal(expected_hovered_color, moved_color, "Expected Hovered Color and moved color should not be the same")
+    assert_equal(initial_color, moved_color, "Initial color and moved color should be the same")
 
   end
- 
+  
   def test_find_elements
       products = @wrapper.find_element(:id, 'products')
       @wrapper.click(products)
