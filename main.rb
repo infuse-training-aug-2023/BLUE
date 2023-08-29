@@ -1,23 +1,21 @@
 require 'selenium-webdriver'
+require_relative 'wrapper'
 
 class NeemansTesting
     @@BASE_URL = 'https://neemans.com'
 
-  def initialize(driver_path, timeout = 60)
-    Selenium::WebDriver::Chrome::Service.driver_path = driver_path
-    @driver = Selenium::WebDriver.for :chrome
-    @driver.manage.window.maximize
-    @wait = Selenium::WebDriver::Wait.new(timeout: timeout)
+  def initialize(driver_path, browser = :chrome, timeout = 15)
+    @wrapper = Wrapper.new(driver_path, browser, timeout)
   end
 
   def signup(first_name_value, last_name_value, email_value, password_value)
-    @driver.get(@@BASE_URL + '/account/register')
+    @wrapper.get(@@BASE_URL + '/account/register')
 
-    first_name = @driver.find_element(:name, 'customer[first_name]')
-    last_name = @driver.find_element(:name, 'customer[last_name]')
-    email = @driver.find_element(:name, 'customer[email]')
-    password = @driver.find_element(:name, 'customer[password]')
-    signup_button = @driver.find_element(:css, 'button[type="submit"]')
+    first_name = @wrapper.find_element(:name, 'customer[first_name]')
+    last_name = @wrapper.find_element(:name, 'customer[last_name]')
+    email = @wrapper.find_element(:name, 'customer[email]')
+    password = @wrapper.find_element(:name, 'customer[password]')
+    signup_button = @wrapper.find_element(:css, 'button[type="submit"]')
 
     if !first_name_value.match?(/^[a-zA-Z]+$/)
         puts "Invalid first name"
@@ -47,26 +45,24 @@ class NeemansTesting
         password.send_keys(password_value)
     end
 
-    original_url = @driver.current_url
-
+    original_url = @wrapper.current_url
+    
     signup_button.click()
 
-    @wait.until { @driver.current_url != original_url }
+    @wrapper.current_url != original_url
 
-    if @driver.current_url == @@BASE_URL + '/challenge'
+    if @wrapper.current_url == @@BASE_URL + '/challenge'
         puts 'Captcha encountered'
         return
     end
-
-    sleep(5)
   end
 
   def login(email_value, password_value)
-    @driver.get(@@BASE_URL + '/account/login')
+    @wrapper.get(@@BASE_URL + '/account/login')
     
-    email = @driver.find_element(:name, 'customer[email]')
-    password = @driver.find_element(:name, 'customer[password]')
-    login_button = @driver.find_element(:css, 'button[type="submit"]')
+    email = @wrapper.find_element(:name, 'customer[email]')
+    password = @wrapper.find_element(:name, 'customer[password]')
+    login_button = @wrapper.find_element(:css, 'button[type="submit"]')
 
     if !email_value.match?(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
         puts "Invalid email"
@@ -82,9 +78,16 @@ class NeemansTesting
         password.send_keys(password_value)
     end
 
+    original_url = @wrapper.current_url
+
     login_button.click()
 
-    sleep(5)
+    @wrapper.current_url != original_url
+
+    if @wrapper.current_url == @@BASE_URL + '/challenge'
+        puts 'Captcha encountered'
+        return
+    end
   end
 
   def search(query)
@@ -93,23 +96,19 @@ class NeemansTesting
         return
     end
 
-    @driver.get(@@BASE_URL + '/search')
+    @wrapper.get(@@BASE_URL + '/search')
 
-    @driver.action.move_to(@driver.find_element(:tag_name, 'body')).perform()
+    @wrapper.move_to(@wrapper.find_element(:tag_name, 'body'))
 
-    search_input = nil
-
-    @wait.until { search_input = @driver.find_element(:css, 'input.Form__Input.snize-input-style') }
+    search_input = @wrapper.find_element(:css, 'input.Form__Input.snize-input-style')
 
     search_input.send_keys(query)
 
     search_input.send_keys(:enter)
 
-    @driver.action.move_to(@driver.find_element(:tag_name, 'body')).perform()
+    @wrapper.move_to(@wrapper.find_element(:tag_name, 'body'))
 
-    @wait.until { @driver.find_elements(:class, 'snize-skeleton-card').empty? }
-
-    sleep(5)
+    @wrapper.find_elements(:class, 'snize-skeleton-card').empty?
   end
 
   def sort(view_mode, sort_by)
@@ -124,19 +123,19 @@ class NeemansTesting
     end
 
     if view_mode == 'grid'
-        @driver.find_element(:css, '.snize-grid-mode-icon').click()
+        @wrapper.find_element(:css, '.snize-grid-mode-icon').click()
     elsif view_mode == 'list'
-        @driver.find_element(:css, '.snize-list-mode-icon').click()
+        @wrapper.find_element(:css, '.snize-list-mode-icon').click()
     else
         puts 'Invalid view mode'
         return
     end
 
-    dropdown = @driver.find_element(:css, '.snize-main-panel-dropdown')
+    dropdown = @wrapper.find_element(:css, '.snize-main-panel-dropdown')
 
-    dropdown.find_element(:css, '.snize-main-panel-dropdown-button').click()
+    @wrapper.click(dropdown.find_element(:css, '.snize-main-panel-dropdown-button'))
 
-    options = dropdown.find_elements(:css, '.snize-main-panel-dropdown-content a')
+    options = @wrapper.find_elements(:css, '.snize-main-panel-dropdown-content a')
 
     case sort_by
     when 'Relevance'
@@ -169,8 +168,6 @@ class NeemansTesting
         puts 'Invalid sort by option'
         return
     end
-
-    sleep(5)
   end
 
   def add_to_cart(item, colour, size)
@@ -191,9 +188,9 @@ class NeemansTesting
 
     item = item.gsub(' ', '-').downcase()
 
-    @driver.get(@@BASE_URL + '/products/' + item)
+    @wrapper.get(@@BASE_URL + '/products/' + item)
     
-    colour_list = @driver.find_element(:css, 'ul.ColorSwatchList')
+    colour_list = @wrapper.find_element(:css, 'ul.ColorSwatchList')
     colour_options = colour_list.find_elements(:css, 'li')
 
     matching_option = colour_options.find { |option| option.attribute('data-value') == colour }
@@ -204,9 +201,7 @@ class NeemansTesting
         return
     end
 
-    sleep(5)
-
-    size_list = @driver.find_element(:css, '.SizeSwatchList')
+    size_list = @wrapper.find_element(:css, '.SizeSwatchList')
     size_options = size_list.find_elements(:css, 'li')
 
     matching_size_option = size_options.find do |option|    
@@ -228,10 +223,10 @@ class NeemansTesting
         return
     end
 
-    add_to_cart_button = @driver.find_element(:css, '.ProductForm__AddToCart')
+    add_to_cart_button = @wrapper.find_element(:css, '.ProductForm__AddToCart')
     add_to_cart_button.click()
-    
-    sleep(5)
+
+    sleep(2)
   end
 
   def update_cart(item, colour, size, action)
@@ -257,9 +252,9 @@ class NeemansTesting
 
     item = item.upcase()
 
-    @driver.get(@@BASE_URL + '/cart')
+    @wrapper.get(@@BASE_URL + '/cart')
 
-    cart_items = @driver.find_elements(:css, '.CartItem')
+    cart_items = @wrapper.find_elements(:css, '.CartItem')
 
     if cart_items.length == 0
         puts 'Cart is empty'
@@ -298,7 +293,7 @@ class NeemansTesting
         return 
     end
 
-    sleep(5)
+    sleep(2)
   end
 
   def remove_from_cart(item, colour, size)
@@ -319,9 +314,9 @@ class NeemansTesting
 
     item = item.upcase()
 
-    @driver.get(@@BASE_URL + '/cart')
+    @wrapper.get(@@BASE_URL + '/cart')
 
-    cart_items = @driver.find_elements(:css, '.CartItem')
+    cart_items = @wrapper.find_elements(:css, '.CartItem')
 
     if cart_items.length == 0
         puts 'Cart is empty'
@@ -350,16 +345,15 @@ class NeemansTesting
         return 
     end
 
-    sleep(5)
+    sleep(2)
   end
 
   def get_product_info()
-    search_results = nil
-    products = nil
+    sleep(2)
 
-    @wait.until { search_results = @driver.find_element(:class, 'snize-search-results-content') }
+    search_results = @wrapper.find_element(:class, 'snize-search-results-content')
 
-    @wait.until { products = search_results.find_elements(:class, 'snize-product') }
+    products = search_results.find_elements(:class, 'snize-product')
 
     product_info = []
     products.each do |product|
@@ -384,7 +378,7 @@ class NeemansTesting
   end
 
   def quit()
-    @driver.quit
+    @wrapper.quit
   end
 end
 
