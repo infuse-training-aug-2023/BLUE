@@ -16,6 +16,18 @@ class Driver
     @driver.current_url
   end
 
+  def switch_to_frame(frame)
+    @driver.switch_to.frame(frame)
+  end
+
+  def execute_script(script, *args)
+    @driver.execute_script(script, *args)
+  end
+  
+  def switch_to_default_content
+    @driver.switch_to.default_content
+  end
+
   def quit
     @driver.quit
   end
@@ -86,6 +98,18 @@ class Wrapper
     @driver.current_url
   end
 
+  def switch_to_frame(frame)
+    @driver.switch_to.frame(frame)
+  end
+
+  def execute_script(script, *args)
+    @driver.execute_script(script, *args)
+  end
+
+  def switch_to_default_content
+    @driver.switch_to.default_content
+  end
+
   def quit
     @driver.quit
   end
@@ -102,11 +126,11 @@ class Wrapper
     @keyboard.send_keys(element, value)
   end
 
-  def find_element(how, what)
-    @element.find_element(how, what)
+  def find_element(selector, element)
+    @element.find_element(selector, element)
   end
 
-  def find_elements(how, what)
-    @element.find_elements(how, what)
+  def find_elements(selector, element)
+    @element.find_elements(selector, element)
   end
 end

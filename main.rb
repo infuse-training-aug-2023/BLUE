@@ -1,15 +1,16 @@
 require 'selenium-webdriver'
 require_relative 'wrapper'
 
-class NeemansTesting
+
+class Neemans
     @@BASE_URL = 'https://neemans.com'
 
-  def initialize(driver_path, browser = :chrome, timeout = 15)
+  def initialize(driver_path, browser = :chrome, timeout = 10)
     @wrapper = Wrapper.new(driver_path, browser, timeout)
   end
 
   def signup(first_name_value, last_name_value, email_value, password_value)
-    @wrapper.get(@@BASE_URL + '/account/register')
+    @wrapper.get(@@BASE_URL + '/account/register?return_url=%2Faccount')
 
     first_name = @wrapper.find_element(:name, 'customer[first_name]')
     last_name = @wrapper.find_element(:name, 'customer[last_name]')
@@ -58,7 +59,7 @@ class NeemansTesting
   end
 
   def login(email_value, password_value)
-    @wrapper.get(@@BASE_URL + '/account/login')
+    @wrapper.get(@@BASE_URL + '/account/login?return_url=%2Faccount')
     
     email = @wrapper.find_element(:name, 'customer[email]')
     password = @wrapper.find_element(:name, 'customer[password]')
@@ -348,12 +349,36 @@ class NeemansTesting
     sleep(2)
   end
 
+  def get_account_info()
+    sleep(2)
+    @wrapper.get(@@BASE_URL + '/account')
+
+    begin
+      address_element = @wrapper.find_element(:class, 'AccountAddress')
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      puts "Account not found"
+      return {}
+    end
+
+    address_text = address_element.text.strip
+    name_parts = address_text.split(' ')
+    first_name = name_parts[0]
+    last_name = name_parts[1]
+
+    return { first_name: first_name, last_name: last_name }
+  end
+
   def get_product_info()
     sleep(2)
 
     search_results = @wrapper.find_element(:class, 'snize-search-results-content')
 
     products = search_results.find_elements(:class, 'snize-product')
+
+    if products.empty?
+      puts "No products found"
+      return []
+    end
 
     product_info = []
     products.each do |product|
@@ -366,15 +391,87 @@ class NeemansTesting
     return product_info
   end
 
+  def get_cart_info()
+    sleep(2)
+    @wrapper.get(@@BASE_URL + '/cart')
+
+    cart_items = @wrapper.find_elements(:class, 'CartItem')
+    cart_info = []
+
+    if cart_items.empty?
+      puts "Cart is empty"
+      return cart_info
+    end
+
+    cart_items.each do |item|
+      item_name = item.find_element(:class, 'CartItem__Title').text.strip.split.map(&:capitalize).join(' ')
+      item_meta = item.find_element(:class, 'CartItem__Meta').text.strip
+      item_color = item_meta.split('/')[0].strip.split.map(&:capitalize).join(' ')
+      item_size = item_meta.match(/\d+/)[0]
+      item_quantity = item.find_element(:class, 'QuantitySelector__CurrentQuantity').attribute('value').to_i
+
+      cart_info << { name: item_name, color: item_color, size: item_size, quantity: item_quantity }
+  end
+
+    return cart_info
+  end
+
+  def close_popup()
+    begin
+      iframe_name = 'survey-frame-~162ib61'
+      iframe = @wrapper.find_element(:name, iframe_name)
+      @wrapper.switch_to_frame(iframe)
+      puts "Popup detected"
+      close_button = @wrapper.find_element(:xpath, '//*[@id="survey-close-div"]')
+      @wrapper.execute_script('arguments[0].click();', close_button)
+      puts "Popup closed"
+      @wrapper.switch_to_default_content
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      puts "Popup not found"
+    end
+  end
+  
+  def popup_listener(func)
+    popup_closed = false
+
+    wrapper = lambda do |*args, **kwargs|
+      if !popup_closed
+        close_popup()
+        popup_closed = true
+      end
+
+      return func.call(*args, **kwargs)
+    end
+  end
+
   def run()
+    method_names = [:signup, :login, :search, :sort, :add_to_cart, :update_cart, :remove_from_cart]
+    method_names.each do |method_name|
+      original_method = method(method_name)
+      decorated_method = popup_listener(original_method)
+      define_singleton_method(method_name) do |*args, **kwargs|
+        decorated_method.call(*args, **kwargs)
+      end
+    end
     signup('john', 'doe', 'johndoe@gmail.com', 'johndoe123')
+    account_info = get_account_info()
+    puts "Account info after signup: #{account_info}"
     login('johndoe@gmail.com', 'johndoe123')
+    account_info = get_account_info()
+    puts "Account info after login: #{account_info}"
     search('sneakers')
     sort('grid', 'Title: A-Z')
-    puts get_product_info()
+    product_info = get_product_info()
+    puts "Product info after search and sort: #{product_info}"
     add_to_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+    cart_info = get_cart_info()
+    puts "Cart info after adding item: #{cart_info}"
     update_cart('Wool Classic Sneakers', 'Midnight Blue', 7, 'increase')
+    cart_info = get_cart_info()
+    puts "Cart info after updating item: #{cart_info}"
     remove_from_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+    cart_info = get_cart_info()
+    puts "Cart info after removing item: #{cart_info}"
   end
 
   def quit()
@@ -383,6 +480,6 @@ class NeemansTesting
 end
 
 
-neemans_testing = NeemansTesting.new('C:\Users\JasonGonsalves\Documents\Infuse\BLUE\chromedriver-win64\chromedriver.exe')
-neemans_testing.run()
-neemans_testing.quit()
+neemans = Neemans.new('C:\Users\JasonGonsalves\Documents\Infuse\BLUE\chromedriver-win64\chromedriver.exe')
+neemans.run()
+neemans.quit()
