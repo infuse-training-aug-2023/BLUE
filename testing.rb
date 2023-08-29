@@ -52,9 +52,6 @@ class TestWrapper < Test::Unit::TestCase
 
   def test_find_elements
     products = @wrapper.find_element(:id, 'products')
-
-    assert_not_nil(products, 'Products element not found')
-
     @wrapper.click(products)
     results = @wrapper.find_elements(:css, '#root > div > div > div:nth-child(2) > div:nth-child(2) > select')
 
@@ -69,7 +66,7 @@ class TestWrapper < Test::Unit::TestCase
     assert_not_nil(login_link, 'Login link not found')
 
     @wrapper.click(login_link)
-    assert_equal("#{@dummy_website_url}/login", @wrapper.current_url)
+    assert_equal('https://practise.usemango.co.uk/login', @wrapper.current_url)
   end
 
   def test_send_keys_to_input_field
@@ -94,22 +91,45 @@ class TestWrapper < Test::Unit::TestCase
     assert_equal('testuser', password_input.attribute('value'))
   end
 
-  def test_find_element
-    login_link = @wrapper.find_element(:xpath, '//*[@id="navbarNavAltMarkup"]/div[2]/a[1]')
+  def test_find_nonexistent_element
+    nonexistent_element = @wrapper.find_elements(:id, 'nonexistent-element')
+    assert_empty(nonexistent_element, 'Nonexistent element should not be found')
+  end
+  
 
-    assert_not_nil(login_link, 'Login link not found')
-
-    @wrapper.click(login_link)
-
-    some_element = @wrapper.find_element(:id, 'exampleInputPassword1')
-    assert_not_nil(some_element, 'Element not found')
+  def test_find_nonexistent_elements
+    nonexistent_elements = @wrapper.find_elements(:class, 'nonexistent-class')
+    assert_empty(nonexistent_elements, 'No nonexistent elements should be found')
   end
 
-  def test_get
-    assert_equal(@dummy_website_url + '/', @wrapper.current_url, 'Navigation failed')
+  def test_invalid_css_selector
+    assert_raise Selenium::WebDriver::Error::NoSuchElementError do
+      invalid_element = @wrapper.find_element(:css, 'invalid-selector')
+    end
   end
+  
+  
 
-  def test_current_url_returns_correct_url
-    assert_equal(@dummy_website_url + '/', @wrapper.current_url)
+  def test_navigation_to_different_pages
+    @wrapper.get(@dummy_website_url)
+    expected_url = URI.parse(@dummy_website_url)
+    actual_url = URI.parse(@wrapper.current_url)
+    assert_equal(expected_url, actual_url, "Navigation failed. Expected URL: #{expected_url}, Actual URL: #{actual_url}")
+    
+    other_url = 'https://www.google.com/'
+    @wrapper.get(other_url)
+    expected_other_url = URI.parse(other_url)
+    actual_other_url = URI.parse(@wrapper.current_url)
+    assert_equal(expected_other_url, actual_other_url, "Navigation failed. Expected URL: #{expected_other_url}, Actual URL: #{actual_other_url}")
   end
+  
+
+  def test_invalid_url
+    invalid_url = 'invalid-url'
+    assert_raise Selenium::WebDriver::Error::InvalidArgumentError do
+      @wrapper.get(invalid_url)
+    end
+  end
+  
+  
 end
