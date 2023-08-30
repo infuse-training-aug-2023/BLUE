@@ -4,7 +4,7 @@ require_relative 'wrapper'
 
 class TestWrapper < Test::Unit::TestCase
   def setup
-    @driver_path = 'G:\selenium training\drivers\chromedriver.exe'
+    @driver_path = 'C:\Users\madhura.patil\Desktop\Git training\selenium\drivers\chromedriver.exe'
     @browser = :chrome
     @timeout = 15
     @dummy_website_url = 'https://practise.usemango.co.uk'
@@ -176,7 +176,11 @@ class TestWrapper < Test::Unit::TestCase
   end
 
   
-
+  def test_execute_script
+    script = "return 'Hello, World!';"
+    result = @wrapper.execute_script(script)
+    assert_equal('Hello, World!', result, 'Script execution result does not match expected value')
+  end
 
 
   
