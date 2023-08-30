@@ -1,26 +1,34 @@
 require 'selenium-webdriver'
+require_relative 'wrapper'
 
-class NeemansTesting
+
+class Neemans
     @@BASE_URL = 'https://neemans.com'
 
-  def initialize(driver_path, timeout = 60)
-    Selenium::WebDriver::Chrome::Service.driver_path = driver_path
-    @driver = Selenium::WebDriver.for :chrome
-    @driver.manage.window.maximize
+  def initialize(driver_path, browser = :chrome, timeout = 10)
+    @wrapper = Wrapper.new(driver_path, browser, timeout)
     @wait = Selenium::WebDriver::Wait.new(timeout: timeout)
   end
 
   def signup(first_name_value, last_name_value, email_value, password_value)
-    @driver.get(@@BASE_URL + '/account/register')
+    @wrapper.get(@@BASE_URL + '/account/register?return_url=%2Faccount')
+    
+    # iframe_name = 'webpush-onsite'
+    # iframe = @wait.until{@wrapper.find_element(:name, iframe_name)}
+    # @wrapper.switch_to_frame(iframe)
+    # puts "switched to webpush-onsite iframe"
+    # close_button2 = @wait.until{ @wrapper.find_element(:id, 'deny')}
+    # puts close_button2
+    # close_button2.click
+    # puts "close button selected"
+    # @wrapper.switch_to_default_content
     
 
-
-
-    first_name = @driver.find_element(:name, 'customer[first_name]')
-    last_name = @driver.find_element(:name, 'customer[last_name]')
-    email = @driver.find_element(:name, 'customer[email]')
-    password = @driver.find_element(:name, 'customer[password]')
-    signup_button = @driver.find_element(:css, 'button[type="submit"]')
+    first_name = @wrapper.find_element(:name, 'customer[first_name]')
+    last_name = @wrapper.find_element(:name, 'customer[last_name]')
+    email = @wrapper.find_element(:name, 'customer[email]')
+    password = @wrapper.find_element(:name, 'customer[password]')
+    signup_button = @wrapper.find_element(:css, 'button[type="submit"]')
 
     if !first_name_value.match?(/^[a-zA-Z]+$/)
         puts "Invalid first name"
@@ -50,41 +58,25 @@ class NeemansTesting
         password.send_keys(password_value)
     end
 
-    original_url = @driver.current_url
-
+    original_url = @wrapper.current_url
+    
     signup_button.click()
 
-    @wait.until { @driver.current_url != original_url }
+    @wrapper.current_url != original_url
 
-    if @driver.current_url == @@BASE_URL + '/challenge'
+    if @wrapper.current_url == @@BASE_URL + '/challenge'
         puts 'Captcha encountered'
         return
     end
-
-    sleep(5)
   end
 
   def login(email_value, password_value)
-    @driver.get(@@BASE_URL + '/account/login')
-
-
-    iframe_name = 'webpush-onsite'
-iframe = @wait.until{@driver.find_element(:name, iframe_name)}
-@driver.switch_to.frame(iframe)
-puts "switched to webpush-onsite iframe"
-
-close_button2 = @wait.until{@driver.find_element(:id, 'deny')}
-
-puts close_button2
-close_button2.click
-
-puts "close button selected"
-@driver.switch_to.default_content
-
+    @wrapper.get(@@BASE_URL + '/account/login?return_url=%2Faccount')
     
-    email = @driver.find_element(:name, 'customer[email]')
-    password = @driver.find_element(:name, 'customer[password]')
-    login_button = @driver.find_element(:css, 'button[type="submit"]')
+    
+    email = @wrapper.find_element(:name, 'customer[email]')
+    password = @wrapper.find_element(:name, 'customer[password]')
+    login_button = @wrapper.find_element(:css, 'button[type="submit"]')
 
     if !email_value.match?(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
         puts "Invalid email"
@@ -100,47 +92,40 @@ puts "close button selected"
         password.send_keys(password_value)
     end
 
+    original_url = @wrapper.current_url
+
     login_button.click()
 
-    sleep(5)
+    @wrapper.current_url != original_url
+
+    if @wrapper.current_url == @@BASE_URL + '/challenge'
+        puts 'Captcha encountered'
+        return
+    end
   end
 
   def search(query)
-
-
     if !query.is_a?(String) || query.empty?
         puts 'Invalid query'
         return
     end
 
-    @driver.get(@@BASE_URL + '/search')
+    @wrapper.get(@@BASE_URL + '/search')
+
     
-    iframe_name = 'survey-frame-~162ib61'
-    iframe = @wait.until{@driver.find_element(:name, iframe_name)}
-    @driver.switch_to.frame(iframe)
-    puts "switched to outer iframe"
-close_button = @wait.until{@driver.find_element(:xpath, '//*[@id="survey-close-div"]')}
-puts close_button
-@driver.execute_script('arguments[0].click();', close_button)
+    
 
-puts "close button selected"
-@driver.switch_to.default_content
+    @wrapper.move_to(@wrapper.find_element(:tag_name, 'body'))
 
-    @driver.action.move_to(@driver.find_element(:tag_name, 'body')).perform()
-
-    search_input = nil
-
-    @wait.until { search_input = @driver.find_element(:css, 'input.Form__Input.snize-input-style') }
+    search_input = @wrapper.find_element(:css, 'input.Form__Input.snize-input-style')
 
     search_input.send_keys(query)
 
     search_input.send_keys(:enter)
 
-    @driver.action.move_to(@driver.find_element(:tag_name, 'body')).perform()
+    @wrapper.move_to(@wrapper.find_element(:tag_name, 'body'))
 
-    @wait.until { @driver.find_elements(:class, 'snize-skeleton-card').empty? }
-
-    sleep(2)
+    @wrapper.find_elements(:class, 'snize-skeleton-card').empty?
   end
 
   def sort(view_mode, sort_by)
@@ -155,19 +140,19 @@ puts "close button selected"
     end
 
     if view_mode == 'grid'
-        @driver.find_element(:css, '.snize-grid-mode-icon').click()
+        @wrapper.find_element(:css, '.snize-grid-mode-icon').click()
     elsif view_mode == 'list'
-        @driver.find_element(:css, '.snize-list-mode-icon').click()
+        @wrapper.find_element(:css, '.snize-list-mode-icon').click()
     else
         puts 'Invalid view mode'
         return
     end
 
-    dropdown = @driver.find_element(:css, '.snize-main-panel-dropdown')
+    dropdown = @wrapper.find_element(:css, '.snize-main-panel-dropdown')
 
-    dropdown.find_element(:css, '.snize-main-panel-dropdown-button').click()
+    @wrapper.click(dropdown.find_element(:css, '.snize-main-panel-dropdown-button'))
 
-    options = dropdown.find_elements(:css, '.snize-main-panel-dropdown-content a')
+    options = @wrapper.find_elements(:css, '.snize-main-panel-dropdown-content a')
 
     case sort_by
     when 'Relevance'
@@ -200,15 +185,9 @@ puts "close button selected"
         puts 'Invalid sort by option'
         return
     end
-
-    sleep(5)
   end
 
-
-
-
   def add_to_cart(item, colour, size)
-
     if !item.is_a?(String) || item.empty?
         puts 'Invalid item name'
         return
@@ -226,43 +205,11 @@ puts "close button selected"
 
     item = item.gsub(' ', '-').downcase()
 
-    @driver.get(@@BASE_URL)
-
-
-#     iframe_name = 'survey-frame-~162ib61'
-#     iframe = @wait.until{@driver.find_element(:name, iframe_name)}
-#     @driver.switch_to.frame(iframe)
-#     puts "switched to outer iframe"
-# close_button = @wait.until{@driver.find_element(:xpath, '//*[@id="survey-close-div"]')}
-# puts close_button
-# @driver.execute_script('arguments[0].click();', close_button)
-
-# puts "close button selected"
-# @driver.switch_to.default_content
-
-
-# iframe_name = 'webpush-onsite'
-# iframe = @wait.until{@driver.find_element(:name, iframe_name)}
-# @driver.switch_to.frame(iframe)
-# puts "switched to webpush-onsite iframe"
-
-# close_button2 = @wait.until{@driver.find_element(:xpath, '//*[@id="deny"]')}
-
-# puts close_button2
-# close_button2.click
-
-# puts "close button selected"
-# @driver.switch_to.default_content
-
-
-
-
-
-@driver.get(@@BASE_URL + '/products/' + item)
+    @wrapper.get(@@BASE_URL + '/products/' + item)
 
     
     
-    colour_list = @driver.find_element(:css, 'ul.ColorSwatchList')
+    colour_list = @wrapper.find_element(:css, 'ul.ColorSwatchList')
     colour_options = colour_list.find_elements(:css, 'li')
 
     matching_option = colour_options.find { |option| option.attribute('data-value') == colour }
@@ -273,9 +220,7 @@ puts "close button selected"
         return
     end
 
-    sleep(5)
-
-    size_list = @driver.find_element(:css, '.SizeSwatchList')
+    size_list = @wrapper.find_element(:css, '.SizeSwatchList')
     size_options = size_list.find_elements(:css, 'li')
 
     matching_size_option = size_options.find do |option|    
@@ -297,9 +242,9 @@ puts "close button selected"
         return
     end
 
-    add_to_cart_button = @driver.find_element(:css, '.ProductForm__AddToCart')
+    add_to_cart_button = @wrapper.find_element(:css, '.ProductForm__AddToCart')
     add_to_cart_button.click()
-    
+
     sleep(2)
   end
 
@@ -326,9 +271,9 @@ puts "close button selected"
 
     item = item.upcase()
 
-    @driver.get(@@BASE_URL + '/cart')
+    @wrapper.get(@@BASE_URL + '/cart')
 
-    cart_items = @driver.find_elements(:css, '.CartItem')
+    cart_items = @wrapper.find_elements(:css, '.CartItem')
 
     if cart_items.length == 0
         puts 'Cart is empty'
@@ -366,8 +311,8 @@ puts "close button selected"
         puts "Item not found in cart: #{item} - #{colour} - #{size}"
         return 
     end
-    puts "End"
-    sleep(5)
+
+    sleep(2)
   end
 
   def remove_from_cart(item, colour, size)
@@ -388,9 +333,9 @@ puts "close button selected"
 
     item = item.upcase()
 
-    @driver.get(@@BASE_URL + '/cart')
+    @wrapper.get(@@BASE_URL + '/cart')
 
-    cart_items = @driver.find_elements(:css, '.CartItem')
+    cart_items = @wrapper.find_elements(:css, '.CartItem')
 
     if cart_items.length == 0
         puts 'Cart is empty'
@@ -419,16 +364,39 @@ puts "close button selected"
         return 
     end
 
-    sleep(5)
+    sleep(2)
+  end
+
+  def get_account_info()
+    sleep(2)
+    @wrapper.get(@@BASE_URL + '/account')
+
+    begin
+      address_element = @wrapper.find_element(:class, 'AccountAddress')
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      puts "Account not found"
+      return {}
+    end
+
+    address_text = address_element.text.strip
+    name_parts = address_text.split(' ')
+    first_name = name_parts[0]
+    last_name = name_parts[1]
+
+    return { first_name: first_name, last_name: last_name }
   end
 
   def get_product_info()
-    search_results = nil
-    products = nil
+    sleep(2)
 
-    @wait.until { search_results = @driver.find_element(:class, 'snize-search-results-content') }
+    search_results = @wrapper.find_element(:class, 'snize-search-results-content')
 
-    @wait.until { products = search_results.find_elements(:class, 'snize-product') }
+    products = search_results.find_elements(:class, 'snize-product')
+
+    if products.empty?
+      puts "No products found"
+      return []
+    end
 
     product_info = []
     products.each do |product|
@@ -438,13 +406,64 @@ puts "close button selected"
         product_info << { name: name, price: price, review: review }
     end
 
-
-
     return product_info
   end
 
+  def get_cart_info()
+    sleep(2)
+    @wrapper.get(@@BASE_URL + '/cart')
+
+    cart_items = @wrapper.find_elements(:class, 'CartItem')
+    cart_info = []
+
+    if cart_items.empty?
+      puts "Cart is empty"
+      return cart_info
+    end
+
+    cart_items.each do |item|
+      item_name = item.find_element(:class, 'CartItem__Title').text.strip.split.map(&:capitalize).join(' ')
+      item_meta = item.find_element(:class, 'CartItem__Meta').text.strip
+      item_color = item_meta.split('/')[0].strip.split.map(&:capitalize).join(' ')
+      item_size = item_meta.match(/\d+/)[0]
+      item_quantity = item.find_element(:class, 'QuantitySelector__CurrentQuantity').attribute('value').to_i
+
+      cart_info << { name: item_name, color: item_color, size: item_size, quantity: item_quantity }
+  end
+
+    return cart_info
+  end
+
+  def close_popup()
+    begin
+      iframe_name = 'survey-frame-~162ib61'
+      iframe = @wrapper.find_element(:name, iframe_name)
+      @wrapper.switch_to_frame(iframe)
+      puts "Popup detected"
+      close_button = @wrapper.find_element(:xpath, '//*[@id="survey-close-div"]')
+      @wrapper.execute_script('arguments[0].click();', close_button)
+      puts "Popup closed"
+      @wrapper.switch_to_default_content
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      puts "Popup not found"
+    end
+  end
+  
+  def popup_listener(func)
+    popup_closed = false
+
+    wrapper = lambda do |*args, **kwargs|
+      if !popup_closed
+        close_popup()
+        popup_closed = true
+      end
+
+      return func.call(*args, **kwargs)
+    end
+  end
+
   def run()
-    method_names = [:signup, :login, :search, :sort, :add_to_cart, :update_cart, :remove_from_cart]
+    method_names = [:login, :search, :sort, :add_to_cart, :update_cart, :remove_from_cart]
     method_names.each do |method_name|
       original_method = method(method_name)
       decorated_method = popup_listener(original_method)
@@ -452,34 +471,104 @@ puts "close button selected"
         decorated_method.call(*args, **kwargs)
       end
     end
-    signup('john', 'doe', 'johndoe@gmail.com', 'johndoe123')
+    
+    # Define test variables
+    first_name = 'john'
+    last_name = 'doe'
+    email = 'johndoe@gmail.com'
+    password = 'johndoe123'
+    query = 'sneakers'
+    view_mode = 'grid'
+    sort_by = 'Title: A-Z'
+    product_name = 'Wool Classic Sneakers'
+    product_color = 'Midnight Blue'
+    product_size = 7
+    quantity = 1
+    action = 'increase'
+
+    # Test signup function
+    signup(first_name, last_name, email, password)
     account_info = get_account_info()
-    puts "Account info after signup: #{account_info}"
-    login('johndoe@gmail.com', 'johndoe123')
+    if account_info[:first_name] == first_name && account_info[:last_name] == last_name
+      puts "Signup passed test"
+    else
+      puts "Signup failed test"
+    end
+
+    # Test login function
+    login(email, password)
     account_info = get_account_info()
-    puts "Account info after login: #{account_info}"
-    search('sneakers')
-    sort('grid', 'Title: A-Z')
+    if account_info[:first_name] == first_name && account_info[:last_name] == last_name
+      puts "Login passed test"
+    else
+      puts "Login failed test"
+    end
+
+    # Test search and sort functions
+    search(query)
+    sort(view_mode, sort_by)
     product_info = get_product_info()
-    puts "Product info after search and sort: #{product_info}"
-    add_to_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+    if product_info.any? { |product| product[:name].downcase.include?(query.downcase) }
+      puts "Search passed test"
+    else
+      puts "Search failed test"
+    end
+
+    if product_info.map { |product| product[:name] }.sort == product_info.map { |product| product[:name] }
+        puts "Sort passed test"
+      else
+        puts "Sort failed test"
+      end
+
+    # Test add to cart function
+    add_to_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    puts "Cart info after adding item: #{cart_info}"
-    update_cart('Wool Classic Sneakers', 'Midnight Blue', 7, 'increase')
+    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+      puts "Add to cart passed test"
+    else
+      puts "Add to cart failed test"
+    end
+
+    # Test update cart function
+    update_cart(product_name, product_color, product_size, action)
     cart_info = get_cart_info()
-    puts "Cart info after updating item: #{cart_info}"
-    remove_from_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+
+    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+      item = cart_info.find { |item| item[:name].downcase.include?(product_name.downcase) }
+
+      if action == "increase"
+        if item[:quantity] == quantity + 1
+          puts "Update cart passed test"
+        else
+          puts "Update cart failed test"
+        end
+      elsif action == "decrease"
+        if item[:quantity] == quantity - 1
+          puts "Update cart passed test"
+        else
+          puts "Update cart failed test"
+        end
+      end
+    else
+      puts "Update cart failed test"
+    end
+
+    # Test remove from cart function
+    remove_from_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    puts "Cart info after removing item: #{cart_info}"
+    if !cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+      puts "Remove from cart passed test"
+    else
+      puts "Remove from cart failed test"
+    end
   end
 
-
   def quit()
-    @driver.quit
+    @wrapper.quit
   end
 end
 
 
-neemans_testing = NeemansTesting.new('G:\selenium training\drivers\chromedriver.exe')
-neemans_testing.run()
-neemans_testing.quit()
+neemans = Neemans.new('G:\selenium training\drivers\chromedriver.exe')
+neemans.run()
+neemans.quit()
