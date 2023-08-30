@@ -9,27 +9,51 @@ class Driver
   end
 
   def get(url)
-    @driver.get(url)
+    begin
+      @driver.get(url)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def current_url
-    @driver.current_url
+    begin
+      @driver.current_url
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def switch_to_frame(frame)
-    @driver.switch_to.frame(frame)
+    begin
+      @driver.switch_to.frame(frame)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def execute_script(script, *args)
-    @driver.execute_script(script, *args)
+    begin
+      @driver.execute_script(script, *args)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
   
   def switch_to_default_content
-    @driver.switch_to.default_content
+    begin
+      @driver.switch_to.default_content
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def quit
-    @driver.quit
+    begin
+      @driver.quit
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 end
 
@@ -39,14 +63,22 @@ class MouseActions
   end
 
   def click(element)
-    element.click
+    begin
+      element.click
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def move_to(element, x, y)
-    if x.nil? || y.nil?
-      @driver.action.move_to(element).perform
-    else
-      @driver.action.move_to(element, x, y).perform
+    begin
+      if x.nil? || y.nil?
+        @driver.action.move_to(element).perform
+      else
+        @driver.action.move_to(element, x, y).perform
+      end
+    rescue StandardError => e
+      puts "Error: #{e.message}"
     end
   end
 end
@@ -57,7 +89,11 @@ class KeyboardActions
   end
 
   def send_keys(element, value)
-    element.send_keys(value)
+    begin
+      element.send_keys(value)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 end
 
@@ -67,15 +103,27 @@ class ElementActions
   end
 
   def find_element(selector, element)
-    @driver.find_element(selector, element)
+    begin
+      @driver.find_element(selector, element)
+    rescue StandardError => e
+      raise e
+    end
   end
 
   def find_elements(selector, element)
-    @driver.find_elements(selector, element)
+    begin
+      @driver.find_elements(selector, element)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def text(element)
-    element.text
+    begin
+      element.text
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 end
 
@@ -91,46 +139,90 @@ class Wrapper
   end
 
   def get(url)
-    @driver.get(url)
+    begin
+      @driver.get(url)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def current_url
-    @driver.current_url
+    begin
+      @driver.current_url
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def switch_to_frame(frame)
-    @driver.switch_to.frame(frame)
+    begin
+      @driver.switch_to.frame(frame)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def execute_script(script, *args)
-    @driver.execute_script(script, *args)
+    begin
+      @driver.execute_script(script, *args)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def switch_to_default_content
-    @driver.switch_to.default_content
+    begin
+      @driver.switch_to.default_content
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def quit
-    @driver.quit
+    begin
+      @driver.quit
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def click(element)
-    @mouse.click(element)
+    begin
+      @mouse.click(element)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def move_to(element, x = nil, y = nil)
-    @mouse.move_to(element, x, y)
+    begin
+      @mouse.move_to(element, x, y)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def send_keys(element, value)
-    @keyboard.send_keys(element, value)
+    begin
+      @keyboard.send_keys(element, value)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   def find_element(selector, element)
-    @element.find_element(selector, element)
+    begin
+      @element.find_element(selector, element)
+    rescue StandardError => e
+      raise e
+    end
   end
 
   def find_elements(selector, element)
-    @element.find_elements(selector, element)
+    begin
+      @element.find_elements(selector, element)
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 end

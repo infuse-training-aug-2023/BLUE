@@ -445,7 +445,7 @@ class Neemans
   end
 
   def run()
-    method_names = [:signup, :login, :search, :sort, :add_to_cart, :update_cart, :remove_from_cart]
+    method_names = [:sort, :add_to_cart, :update_cart, :remove_from_cart]
     method_names.each do |method_name|
       original_method = method(method_name)
       decorated_method = popup_listener(original_method)
@@ -453,25 +453,96 @@ class Neemans
         decorated_method.call(*args, **kwargs)
       end
     end
-    signup('john', 'doe', 'johndoe@gmail.com', 'johndoe123')
+    
+    # Define test variables
+    first_name = 'john'
+    last_name = 'doe'
+    email = 'johndoe@gmail.com'
+    password = 'johndoe123'
+    query = 'sneakers'
+    view_mode = 'grid'
+    sort_by = 'Title: A-Z'
+    product_name = 'Wool Classic Sneakers'
+    product_color = 'Midnight Blue'
+    product_size = 7
+    quantity = 1
+    action = 'increase'
+
+    # Test signup function
+    signup(first_name, last_name, email, password)
     account_info = get_account_info()
-    puts "Account info after signup: #{account_info}"
-    login('johndoe@gmail.com', 'johndoe123')
+    if account_info[:first_name] == first_name && account_info[:last_name] == last_name
+      puts "Signup passed test"
+    else
+      puts "Signup failed test"
+    end
+
+    # Test login function
+    login(email, password)
     account_info = get_account_info()
-    puts "Account info after login: #{account_info}"
-    search('sneakers')
-    sort('grid', 'Title: A-Z')
+    if account_info[:first_name] == first_name && account_info[:last_name] == last_name
+      puts "Login passed test"
+    else
+      puts "Login failed test"
+    end
+
+    # Test search and sort functions
+    search(query)
+    sort(view_mode, sort_by)
     product_info = get_product_info()
-    puts "Product info after search and sort: #{product_info}"
-    add_to_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+    if product_info.any? { |product| product[:name].downcase.include?(query.downcase) }
+      puts "Search passed test"
+    else
+      puts "Search failed test"
+    end
+
+    if product_info.map { |product| product[:name] }.sort == product_info.map { |product| product[:name] }
+        puts "Sort passed test"
+      else
+        puts "Sort failed test"
+      end
+
+    # Test add to cart function
+    add_to_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    puts "Cart info after adding item: #{cart_info}"
-    update_cart('Wool Classic Sneakers', 'Midnight Blue', 7, 'increase')
+    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+      puts "Add to cart passed test"
+    else
+      puts "Add to cart failed test"
+    end
+
+    # Test update cart function
+    update_cart(product_name, product_color, product_size, action)
     cart_info = get_cart_info()
-    puts "Cart info after updating item: #{cart_info}"
-    remove_from_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+
+    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+      item = cart_info.find { |item| item[:name].downcase.include?(product_name.downcase) }
+
+      if action == "increase"
+        if item[:quantity] == quantity + 1
+          puts "Update cart passed test"
+        else
+          puts "Update cart failed test"
+        end
+      elsif action == "decrease"
+        if item[:quantity] == quantity - 1
+          puts "Update cart passed test"
+        else
+          puts "Update cart failed test"
+        end
+      end
+    else
+      puts "Update cart failed test"
+    end
+
+    # Test remove from cart function
+    remove_from_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    puts "Cart info after removing item: #{cart_info}"
+    if !cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+      puts "Remove from cart passed test"
+    else
+      puts "Remove from cart failed test"
+    end
   end
 
   def quit()
