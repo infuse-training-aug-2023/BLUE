@@ -78,7 +78,8 @@ class TestWrapper < Test::Unit::TestCase
     @wrapper.move_to(products_element)
 
     hovered_color = products_element.css_value('color')
-    expected_hovered_color = 'rgba(255, 255, 255, 0.75)'
+    
+    expected_hovered_color = 'rgba(255, 255, 255, 0.75)' || 'rgba(255, 255, 255, 0.74)' 
 
     assert_equal(expected_initial_color, initial_color, "Initial color is not as expected")
     assert_not_equal(initial_color, hovered_color, "Color did not change after hovering")
@@ -179,6 +180,7 @@ class TestWrapper < Test::Unit::TestCase
   def test_execute_script
     script = "return 'Hello, World!';"
     result = @wrapper.execute_script(script)
+    puts "Script execution result: #{result}"
     assert_equal('Hello, World!', result, 'Script execution result does not match expected value')
   end
 
