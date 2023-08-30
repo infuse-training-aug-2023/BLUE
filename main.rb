@@ -395,15 +395,10 @@ class Neemans
 
     product_info = []
     products.each do |product|
-      begin
         name = product.find_element(:class, 'snize-title').text
         price = product.find_element(:class, 'snize-price').text.gsub(/[^\d\.]/, '').to_f
         review = product.find_element(:class, 'total-reviews').text.gsub(/[^\d]/, '').to_i
         product_info << { name: name, price: price, review: review }
-      rescue Selenium::WebDriver::Error::NoSuchElementError
-        puts "Stuck on skeleton loading"
-        return
-      end
     end
 
     return product_info
@@ -517,7 +512,7 @@ class Neemans
     # Test search and sort functions
     search(query)
     product_info = get_product_info()
-    if product_info { |product| product[:name].downcase.include?(query.downcase) }
+    if product_info.any? { |product| product[:name].downcase.include?(query.downcase) }
       puts "Search passed test"
     else
       puts "Search failed test"
@@ -534,7 +529,7 @@ class Neemans
     # Test add to cart function
     add_to_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    if cart_info { |item| item[:name].downcase.include?(product_name.downcase) }
+    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
       puts "Add to cart passed test"
     else
       puts "Add to cart failed test"
@@ -544,7 +539,7 @@ class Neemans
     update_cart(product_name, product_color, product_size, action)
     cart_info = get_cart_info()
 
-    if cart_info { |item| item[:name].downcase.include?(product_name.downcase) }
+    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
       item = cart_info.find { |item| item[:name].downcase.include?(product_name.downcase) }
 
       if action == "increase"
@@ -567,7 +562,7 @@ class Neemans
     # Test remove from cart function
     remove_from_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    if !cart_info { |item| item[:name].downcase.include?(product_name.downcase) }
+    if !cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
       puts "Remove from cart passed test"
     else
       puts "Remove from cart failed test"
