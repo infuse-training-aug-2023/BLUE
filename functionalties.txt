@@ -1,4 +1,4 @@
 Functionalities:
 1 - signup/login
 2 - search/sort
-3 - add to cart/remove from cart
+3 - add to cart/update cart/remove from cart

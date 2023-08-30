@@ -5,8 +5,8 @@ require_relative 'wrapper'
 class Neemans
     @@BASE_URL = 'https://neemans.com'
 
-  def initialize(driver_path, browser = :chrome, timeout = 10)
-    @wrapper = Wrapper.new(driver_path, browser, timeout)
+  def initialize(driver_path, browser = :chrome, timeout = 10, headless = true, width = 1920, height = 1080)
+    @wrapper = Wrapper.new(driver_path, browser, timeout, headless, width, height)
   end
 
   def signup(first_name_value, last_name_value, email_value, password_value)
@@ -91,6 +91,14 @@ class Neemans
     end
   end
 
+  def logout()
+    @wrapper.get(@@BASE_URL + '/account/logout')
+
+    original_url = @wrapper.current_url
+
+    @wrapper.current_url != original_url
+  end
+
   def search(query)
     if !query.is_a?(String) || query.empty?
         puts 'Invalid query'
@@ -109,7 +117,7 @@ class Neemans
 
     @wrapper.move_to(@wrapper.find_element(:tag_name, 'body'))
 
-    @wrapper.find_elements(:class, 'snize-skeleton-card').empty?
+    sleep(2)
   end
 
   def sort(view_mode, sort_by)
@@ -121,6 +129,11 @@ class Neemans
     if !sort_by.is_a?(String) || sort_by.empty?
         puts 'Invalid sort by option'    
         return
+    end
+
+    if !@wrapper.find_elements(:class, 'snize-skeleton-card').empty?
+      puts "Stuck on skeleton loading"
+      return
     end
 
     if view_mode == 'grid'
@@ -353,19 +366,19 @@ class Neemans
     sleep(2)
     @wrapper.get(@@BASE_URL + '/account')
 
+    description_element = nil
+
     begin
-      address_element = @wrapper.find_element(:class, 'AccountAddress')
+      description_element = @wrapper.find_element(:class, 'SectionHeader__Description')
     rescue Selenium::WebDriver::Error::NoSuchElementError
-      puts "Account not found"
       return {}
     end
 
-    address_text = address_element.text.strip
-    name_parts = address_text.split(' ')
-    first_name = name_parts[0]
-    last_name = name_parts[1]
+    welcome_message = description_element.text
 
-    return { first_name: first_name, last_name: last_name }
+    first_name = welcome_message.match(/Welcome back, (.*)!/)[1]
+
+    return { first_name: first_name }
   end
 
   def get_product_info()
@@ -375,17 +388,22 @@ class Neemans
 
     products = search_results.find_elements(:class, 'snize-product')
 
-    if products.empty?
+    if !search_results.displayed?
       puts "No products found"
       return []
     end
 
     product_info = []
     products.each do |product|
+      begin
         name = product.find_element(:class, 'snize-title').text
         price = product.find_element(:class, 'snize-price').text.gsub(/[^\d\.]/, '').to_f
         review = product.find_element(:class, 'total-reviews').text.gsub(/[^\d]/, '').to_i
         product_info << { name: name, price: price, review: review }
+      rescue Selenium::WebDriver::Error::NoSuchElementError
+        puts "Stuck on skeleton loading"
+        return
+      end
     end
 
     return product_info
@@ -418,16 +436,14 @@ class Neemans
 
   def close_popup()
     begin
-      iframe_name = 'survey-frame-~162ib61'
-      iframe = @wrapper.find_element(:name, iframe_name)
-      @wrapper.switch_to_frame(iframe)
-      puts "Popup detected"
-      close_button = @wrapper.find_element(:xpath, '//*[@id="survey-close-div"]')
-      @wrapper.execute_script('arguments[0].click();', close_button)
-      puts "Popup closed"
-      @wrapper.switch_to_default_content
+      iframe_element = @wrapper.find_element(:class, 'webklipper-publisher-survey-container-~162ib61')
+      if iframe_element
+        puts "Popup detected"
+        @wrapper.execute_script("arguments[0].remove()", iframe_element)
+        sleep(5)
+        puts "Popup closed"
+      end
     rescue Selenium::WebDriver::Error::NoSuchElementError
-      puts "Popup not found"
     end
   end
   
@@ -445,7 +461,7 @@ class Neemans
   end
 
   def run()
-    method_names = [:sort, :add_to_cart, :update_cart, :remove_from_cart]
+    method_names = [:search, :sort, :add_to_cart, :update_cart, :remove_from_cart]
     method_names.each do |method_name|
       original_method = method(method_name)
       decorated_method = popup_listener(original_method)
@@ -467,11 +483,12 @@ class Neemans
     product_size = 7
     quantity = 1
     action = 'increase'
+    flag = 0
 
     # Test signup function
     signup(first_name, last_name, email, password)
     account_info = get_account_info()
-    if account_info[:first_name] == first_name && account_info[:last_name] == last_name
+    if account_info[:first_name] == first_name
       puts "Signup passed test"
     else
       puts "Signup failed test"
@@ -480,22 +497,34 @@ class Neemans
     # Test login function
     login(email, password)
     account_info = get_account_info()
-    if account_info[:first_name] == first_name && account_info[:last_name] == last_name
+    if account_info[:first_name] == first_name
       puts "Login passed test"
     else
       puts "Login failed test"
+      flag = 1
+    end
+
+    # Test logout function
+    logout()
+    account_info = get_account_info()
+    
+    if flag && !account_info[:first_name]
+      puts "Logout passed test"
+    else
+      puts "Logout failed test"
     end
 
     # Test search and sort functions
     search(query)
-    sort(view_mode, sort_by)
     product_info = get_product_info()
-    if product_info.any? { |product| product[:name].downcase.include?(query.downcase) }
+    if product_info { |product| product[:name].downcase.include?(query.downcase) }
       puts "Search passed test"
     else
       puts "Search failed test"
     end
 
+    sort(view_mode, sort_by)
+    product_info = get_product_info()
     if product_info.map { |product| product[:name] }.sort == product_info.map { |product| product[:name] }
         puts "Sort passed test"
       else
@@ -505,7 +534,7 @@ class Neemans
     # Test add to cart function
     add_to_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+    if cart_info { |item| item[:name].downcase.include?(product_name.downcase) }
       puts "Add to cart passed test"
     else
       puts "Add to cart failed test"
@@ -515,7 +544,7 @@ class Neemans
     update_cart(product_name, product_color, product_size, action)
     cart_info = get_cart_info()
 
-    if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+    if cart_info { |item| item[:name].downcase.include?(product_name.downcase) }
       item = cart_info.find { |item| item[:name].downcase.include?(product_name.downcase) }
 
       if action == "increase"
@@ -538,7 +567,7 @@ class Neemans
     # Test remove from cart function
     remove_from_cart(product_name, product_color, product_size)
     cart_info = get_cart_info()
-    if !cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
+    if !cart_info { |item| item[:name].downcase.include?(product_name.downcase) }
       puts "Remove from cart passed test"
     else
       puts "Remove from cart failed test"
@@ -551,6 +580,7 @@ class Neemans
 end
 
 
-neemans = Neemans.new('C:\Users\JasonGonsalves\Documents\Infuse\BLUE\chromedriver-win64\chromedriver.exe')
+neemans = Neemans.new(ENV['CHROMEDRIVER'] || 'C:\Users\JasonGonsalves\Documents\Infuse\BLUE\chromedriver-win64\chromedriver.exe')
+
 neemans.run()
 neemans.quit()

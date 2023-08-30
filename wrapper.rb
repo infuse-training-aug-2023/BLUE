@@ -1,11 +1,30 @@
 require 'selenium-webdriver'
 
 class Driver
-  def initialize(driver_path, browser, timeout)
+  def initialize(driver_path, browser, timeout, headless, width, height)
     Selenium::WebDriver::Chrome::Service.driver_path = driver_path
-    @driver = Selenium::WebDriver.for browser
-    @driver.manage.window.maximize
+    Selenium::WebDriver.logger.level = :warn
+    options = Selenium::WebDriver::Chrome::Options.new
+    if headless
+      options.add_argument('--headless')
+      options.add_argument('--disable-gpu')
+      options.add_argument('--no-sandbox')
+      options.add_argument('--disable-dev-shm-usage')
+      @driver = Selenium::WebDriver.for browser, options: options
+    else
+      @driver = Selenium::WebDriver.for browser
+    end
+    if width && height
+      @driver.manage.window.resize_to(width, height)
+    else
+      @driver.manage.window.maximize
+    end
+
     @driver.manage.timeouts.implicit_wait = timeout
+  end
+
+  def get_driver
+    return @driver
   end
 
   def get(url)
@@ -28,7 +47,6 @@ class Driver
     begin
       @driver.switch_to.frame(frame)
     rescue StandardError => e
-      puts "Error: #{e.message}"
     end
   end
 
@@ -128,14 +146,11 @@ class ElementActions
 end
 
 class Wrapper
-  def initialize(driver_path, browser = :chrome, timeout = 15)
-    Selenium::WebDriver::Chrome::Service.driver_path = driver_path
-    @driver = Selenium::WebDriver.for browser
-    @driver.manage.window.maximize
-    @driver.manage.timeouts.implicit_wait = timeout
-    @mouse = MouseActions.new(@driver)
-    @keyboard = KeyboardActions.new(@driver)
-    @element = ElementActions.new(@driver)
+  def initialize(driver_path, browser, timeout, headless, width, height)
+    @driver = Driver.new(driver_path, browser, timeout, headless, width, height)
+    @mouse = MouseActions.new(@driver.get_driver)
+    @keyboard = KeyboardActions.new(@driver.get_driver)
+    @element = ElementActions.new(@driver.get_driver)
   end
 
   def get(url)
@@ -156,7 +171,7 @@ class Wrapper
 
   def switch_to_frame(frame)
     begin
-      @driver.switch_to.frame(frame)
+      @driver.switch_to.frame frame
     rescue StandardError => e
       puts "Error: #{e.message}"
     end
