@@ -193,4 +193,5 @@ class Wrapper
   def find_elements(selector, element)
     @element.find_elements(selector, element)
   end
+  
 end

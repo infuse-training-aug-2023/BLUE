@@ -444,14 +444,33 @@ puts "close button selected"
   end
 
   def run()
-    # signup('john', 'doe', 'johndoe@gmail.com', 'johndoe123')
+    method_names = [:signup, :login, :search, :sort, :add_to_cart, :update_cart, :remove_from_cart]
+    method_names.each do |method_name|
+      original_method = method(method_name)
+      decorated_method = popup_listener(original_method)
+      define_singleton_method(method_name) do |*args, **kwargs|
+        decorated_method.call(*args, **kwargs)
+      end
+    end
+    signup('john', 'doe', 'johndoe@gmail.com', 'johndoe123')
+    account_info = get_account_info()
+    puts "Account info after signup: #{account_info}"
     login('johndoe@gmail.com', 'johndoe123')
+    account_info = get_account_info()
+    puts "Account info after login: #{account_info}"
     search('sneakers')
     sort('grid', 'Title: A-Z')
-    puts get_product_info()
+    product_info = get_product_info()
+    puts "Product info after search and sort: #{product_info}"
     add_to_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+    cart_info = get_cart_info()
+    puts "Cart info after adding item: #{cart_info}"
     update_cart('Wool Classic Sneakers', 'Midnight Blue', 7, 'increase')
+    cart_info = get_cart_info()
+    puts "Cart info after updating item: #{cart_info}"
     remove_from_cart('Wool Classic Sneakers', 'Midnight Blue', 7)
+    cart_info = get_cart_info()
+    puts "Cart info after removing item: #{cart_info}"
   end
 
 
