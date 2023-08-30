@@ -112,7 +112,7 @@ class TestWrapper < Test::Unit::TestCase
   
   def test_move_to_with_coordinates
     @mouse_actions = MouseActions.new(@wrapper.instance_variable_get(:@driver))
-    element = @wrapper.find_element(:css, '#root > nav > a') # Replace with your element locator
+    element = @wrapper.find_element(:css, '#root > nav > a') 
     x = 80
     y = 200
     result = @mouse_actions.move_to(element, x, y)
@@ -121,7 +121,7 @@ class TestWrapper < Test::Unit::TestCase
 
   def test_move_to_without_coordinates
     @mouse_actions = MouseActions.new(@wrapper.instance_variable_get(:@driver))
-    element = @wrapper.find_element(:css, '#root > nav > a') # Replace with your element locator
+    element = @wrapper.find_element(:css, '#root > nav > a') 
     assert_nothing_raised do
       @mouse_actions.move_to(element, nil, nil)
     end
