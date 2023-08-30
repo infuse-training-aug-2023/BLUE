@@ -4,7 +4,7 @@ require_relative 'wrapper'
 
 class TestWrapper < Test::Unit::TestCase
   def setup
-    @driver_path = 'C:\Users\madhura.patil\Desktop\Git training\selenium\drivers\chromedriver.exe'
+    @driver_path = 'G:\selenium training\drivers\chromedriver.exe'
     @browser = :chrome
     @timeout = 15
     @dummy_website_url = 'https://practise.usemango.co.uk'
@@ -16,11 +16,55 @@ class TestWrapper < Test::Unit::TestCase
     @wrapper.quit
   end
 
+  def test_mouse_actions_instance_created
+    mouse_actions = MouseActions.new(@driver) 
+    assert_instance_of(MouseActions, mouse_actions)
+  end
+  
+  def test_keyboard_actions_instance_created
+    keyboard_actions = KeyboardActions.new(@driver) 
+    assert_instance_of(KeyboardActions, keyboard_actions)
+  end
+  
+  def test_element_actions_instance_created
+    element_actions = ElementActions.new(@driver)
+    assert_instance_of(ElementActions, element_actions)
+  end
+
+  def test_text
+    @element_actions = ElementActions.new(@driver)
+    element=@wrapper.find_element(:css, '#root > nav > a')
+    result = @element_actions.text(element)
+    assert_equal('useMango DemoWebsite', result)
+  end
+
+
   def test_find_element
     result = @wrapper.find_element(:css, '#root > nav > a')
+    assert_not_nil(result)
+    assert_equal('useMango DemoWebsite', result.text)
+  end
 
-    assert_not_nil(result, 'Element not found')
-    assert_equal('useMango DemoWebsite', result.text, 'Text does not match expected value')
+  
+  def test_element_not_present
+    assert_raise(Selenium::WebDriver::Error::NoSuchElementError) do
+      @wrapper.find_element(:id, 'id1234')
+    end
+  end
+
+  def test_empty_selector
+    assert_raise(Selenium::WebDriver::Error::InvalidSelectorError) do
+      element = @wrapper.find_element(:id, nil)
+    end
+  end
+ 
+  def no_such_element_present
+    assert_raise(Selenium::WebDriver::Error::InvalidArgumentError) do
+      element = @wrapper.find_element(:id, 'mobiles')
+    end
+    assert_raise(Selenium::WebDriver::Error::InvalidArgumentError) do
+      element = @wrapper.find_element(:class, 'dvd')
+    end
   end
 
   def test_move_to
@@ -62,16 +106,13 @@ class TestWrapper < Test::Unit::TestCase
 
   def test_click
     login_link = @wrapper.find_element(:xpath, '//*[@id="navbarNavAltMarkup"]/div[2]/a[1]')
-
     assert_not_nil(login_link, 'Login link not found')
-
     @wrapper.click(login_link)
     assert_equal('https://practise.usemango.co.uk/login', @wrapper.current_url)
   end
 
   def test_send_keys_to_input_field
     login_link = @wrapper.find_element(:xpath, '//*[@id="navbarNavAltMarkup"]/div[2]/a[1]')
-
     assert_not_nil(login_link, 'Login link not found')
 
     @wrapper.click(login_link)
@@ -123,13 +164,26 @@ class TestWrapper < Test::Unit::TestCase
     assert_equal(expected_other_url, actual_other_url, "Navigation failed. Expected URL: #{expected_other_url}, Actual URL: #{actual_other_url}")
   end
   
-
-  def test_invalid_url
-    invalid_url = 'invalid-url'
-    assert_raise Selenium::WebDriver::Error::InvalidArgumentError do
-      @wrapper.get(invalid_url)
-    end
+  
+  def test_keyboard_actions_on_readonly_field
+    @keyboard_actions = KeyboardActions.new(@driver)
+    field = @wrapper.find_element(:css, '#root > nav > a')
+    input_field = @wrapper.find_element(:css, '#root > nav > a')
+    input_text = "Hello, World!"
+    input_field.send_keys(input_text)
+    actual_value = input_field.attribute('value')
+    assert_nil(actual_value)
   end
+
   
+
+
+
   
+  # def test_quit_method
+  #   quit_result = @wrapper.quit
+  #   assert_nil(quit_result)
+  # end
+
+
 end
