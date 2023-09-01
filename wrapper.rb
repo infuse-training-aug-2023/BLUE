@@ -43,24 +43,9 @@ class Driver
     end
   end
 
-  def switch_to_frame(frame)
-    begin
-      @driver.switch_to.frame(frame)
-    rescue StandardError => e
-    end
-  end
-
   def execute_script(script, *args)
     begin
       @driver.execute_script(script, *args)
-    rescue StandardError => e
-      puts "Error: #{e.message}"
-    end
-  end
-  
-  def switch_to_default_content
-    begin
-      @driver.switch_to.default_content
     rescue StandardError => e
       puts "Error: #{e.message}"
     end
@@ -169,25 +154,9 @@ class Wrapper
     end
   end
 
-  def switch_to_frame(frame)
-    begin
-      @driver.switch_to.frame frame
-    rescue StandardError => e
-      puts "Error: #{e.message}"
-    end
-  end
-
   def execute_script(script, *args)
     begin
       @driver.execute_script(script, *args)
-    rescue StandardError => e
-      puts "Error: #{e.message}"
-    end
-  end
-
-  def switch_to_default_content
-    begin
-      @driver.switch_to.default_content
     rescue StandardError => e
       puts "Error: #{e.message}"
     end

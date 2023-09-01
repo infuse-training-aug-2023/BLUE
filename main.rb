@@ -5,57 +5,8 @@ require_relative 'wrapper'
 class Neemans
     @@BASE_URL = 'https://neemans.com'
 
-  def initialize(driver_path, browser = :chrome, timeout = 10, headless = true, width = 1920, height = 1080)
+  def initialize(driver_path, browser = :chrome, timeout = 10, headless = false, width = 1920, height = 1080)
     @wrapper = Wrapper.new(driver_path, browser, timeout, headless, width, height)
-  end
-
-  def signup(first_name_value, last_name_value, email_value, password_value)
-    @wrapper.get(@@BASE_URL + '/account/register?return_url=%2Faccount')
-
-    first_name = @wrapper.find_element(:name, 'customer[first_name]')
-    last_name = @wrapper.find_element(:name, 'customer[last_name]')
-    email = @wrapper.find_element(:name, 'customer[email]')
-    password = @wrapper.find_element(:name, 'customer[password]')
-    signup_button = @wrapper.find_element(:css, 'button[type="submit"]')
-
-    if !first_name_value.match?(/^[a-zA-Z]+$/)
-        puts "Invalid first name"
-        return
-    else
-        first_name.send_keys(first_name_value)
-    end
-
-    if !last_name_value.match?(/^[a-zA-Z]+$/)
-        puts "Invalid last name"
-        return
-    else
-        last_name.send_keys(last_name_value)
-    end
-
-    if !email_value.match?(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
-        puts "Invalid email"
-        return
-    else
-        email.send_keys(email_value)
-    end
-
-    if !password_value.match?(/^(?=.*[a-zA-Z])(?=.*[0-9]).{8,}$/)
-        puts "Invalid password"
-        return
-    else
-        password.send_keys(password_value)
-    end
-
-    original_url = @wrapper.current_url
-    
-    signup_button.click()
-
-    @wrapper.current_url != original_url
-
-    if @wrapper.current_url == @@BASE_URL + '/challenge'
-        puts 'Captcha encountered'
-        return
-    end
   end
 
   def login(email_value, password_value)
@@ -480,20 +431,12 @@ class Neemans
     action = 'increase'
     flag = 0
 
-    # Test signup function
-    signup(first_name, last_name, email, password)
-    account_info = get_account_info()
-    if account_info[:first_name] == first_name
-      puts "Signup passed test"
-    else
-      puts "Signup failed test"
-    end
-
     # Test login function
     login(email, password)
     account_info = get_account_info()
     if account_info[:first_name] == first_name
       puts "Login passed test"
+      puts account_info
     else
       puts "Login failed test"
       flag = 1
@@ -503,8 +446,9 @@ class Neemans
     logout()
     account_info = get_account_info()
     
-    if flag && !account_info[:first_name]
+    if flag.nil?
       puts "Logout passed test"
+      puts account_info
     else
       puts "Logout failed test"
     end
@@ -514,6 +458,7 @@ class Neemans
     product_info = get_product_info()
     if product_info.any? { |product| product[:name].downcase.include?(query.downcase) }
       puts "Search passed test"
+      puts product_info
     else
       puts "Search failed test"
     end
@@ -522,6 +467,7 @@ class Neemans
     product_info = get_product_info()
     if product_info.map { |product| product[:name] }.sort == product_info.map { |product| product[:name] }
         puts "Sort passed test"
+        puts product_info
       else
         puts "Sort failed test"
       end
@@ -531,6 +477,7 @@ class Neemans
     cart_info = get_cart_info()
     if cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
       puts "Add to cart passed test"
+      puts cart_info
     else
       puts "Add to cart failed test"
     end
@@ -545,12 +492,14 @@ class Neemans
       if action == "increase"
         if item[:quantity] == quantity + 1
           puts "Update cart passed test"
+          puts cart_info
         else
           puts "Update cart failed test"
         end
       elsif action == "decrease"
         if item[:quantity] == quantity - 1
           puts "Update cart passed test"
+          puts cart_info
         else
           puts "Update cart failed test"
         end
@@ -564,6 +513,7 @@ class Neemans
     cart_info = get_cart_info()
     if !cart_info.any? { |item| item[:name].downcase.include?(product_name.downcase) }
       puts "Remove from cart passed test"
+      puts cart_info
     else
       puts "Remove from cart failed test"
     end

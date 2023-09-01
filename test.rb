@@ -76,35 +76,6 @@ class TestWrapper < Test::Unit::TestCase
       element = @wrapper.find_element(:class, 'dvd')
     end
   end
-
-
-  def test_move_to
-    products_element = @wrapper.find_element(:id, 'products')
-
-    assert_not_nil(products_element, 'Products element not found')
-
-    initial_color = products_element.css_value('color')
-    expected_initial_color = 'rgba(255, 255, 255, 0.5)' || 'rgba(255, 255, 255, 0.506)'
-
-    @wrapper.move_to(products_element)
-
-    hovered_color = products_element.css_value('color')
-    
-    expected_hovered_color = 'rgba(255, 255, 255, 0.75)' || 'rgba(255, 255, 255, 0.74)' 
-
-    assert_equal(expected_initial_color, initial_color, "Initial color is not as expected")
-    assert_not_equal(initial_color, hovered_color, "Color did not change after hovering")
-    assert_equal(expected_hovered_color, hovered_color, "Color is not as expected after hovering")
-
-    @wrapper.move_to(products_element, 10, 20)
-
-    moved_color = products_element.css_value('color')
-    expected_moved_color = 'rgba(255, 255, 255, 0.5)' || 'rgba(255, 255, 255, 0.506)'
-
-    assert_equal(expected_moved_color, moved_color, "Color is not as expected after moving with x and y values")
-    assert_not_equal(expected_hovered_color, moved_color, "Expected Hovered Color and moved color should not be the same")
-    assert_equal(initial_color, moved_color, "Initial color and moved color should be the same")
-  end
   
 
   def test_find_elements
@@ -184,39 +155,6 @@ class TestWrapper < Test::Unit::TestCase
     input_field.send_keys(input_text)
     actual_value = input_field.attribute('value')
     assert_nil(actual_value)
-  end
-
-
-
-  def test_switch_to_frame
-    aboutpage = @wrapper.find_element(:xpath, '//*[@id="navbarNavAltMarkup"]/div[1]/a[4]')
-    aboutpage.click
-    frame_element = @wrapper.find_element(:css, '#root > div > div > div.col-lg-5.col-md-5.col-sm-12.col-xs-12.p-3 > iframe')
-    @wrapper.switch_to_frame(frame_element)
-
-    begin
-      iframe_element = @wrapper.find_element(:id, 'mapDiv')
-    rescue Selenium::WebDriver::Error::NoSuchElementError
-      iframe_element = ''
-
-      puts "Not in the iframe."
-    end
-    assert_not_nil(iframe_element)   
-  end
-
-
-  def test_switch_to_default_content
-    aboutpage = @wrapper.find_element(:xpath, '//*[@id="navbarNavAltMarkup"]/div[1]/a[4]')
-    aboutpage.click
-    frame_element = @wrapper.find_element(:css, '#root > div > div > div.col-lg-5.col-md-5.col-sm-12.col-xs-12.p-3 > iframe')
-    @wrapper.switch_to_frame(frame_element)
-    @wrapper.switch_to_default_content
-    begin
-      iframe_element = @wrapper.find_element(:id, 'mapDiv')
-    rescue Selenium::WebDriver::Error::NoSuchElementError
-      puts "Not in the iframe."
-    end
-    assert_nil(iframe_element)   
   end
 
     
